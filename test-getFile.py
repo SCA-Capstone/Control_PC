@@ -1,36 +1,48 @@
+import os
 import requests
 
-# URL for the API endpoint
-url = 'http://localhost:3000/api/getFile/424'
+# API endpoint for fetching files based on folder ID (last three digits)
+api_endpoint = 'http://localhost:3000/api/getFile/743'  # Change this to your actual endpoint
 
-# Send a GET request to the endpoint
-try:
-    response = requests.get(url)
-    response.raise_for_status()  # Check for HTTP errors
+# Directory to save downloaded files
+download_dir = 'test'
 
-    # Parse the JSON response (assuming the link is provided in a JSON format)
-    data = response.json()
+# Ensure the directory exists
+os.makedirs(download_dir, exist_ok=True)
 
-    # Extract the file link from the response (assuming it returns 'file_url' as key)
-    file_url = data.get('publicUrl')
+def download_files():
+    try:
+        # Send GET request to API
+        response = requests.get(api_endpoint)
+        print(response)
+        response.raise_for_status()  # Raise an error for bad status codes
 
-    if not file_url:
-        print("File URL not found in the response")
-    else:
-        # Name of the file to save
-        new_file_name = 'downloaded-file'
+        # Parse the response JSON
+        data = response.json()
+        files = data.get('files', [])
 
-        # Send a GET request to download the file
-        print(f"Downloading file from {file_url}...")
-        file_response = requests.get(file_url, stream=True)
-        file_response.raise_for_status()  # Check if the download was successful
+        if not files:
+            print("No files found for the given folder ID.")
+            return
 
-        # Write the content to a file while downloading
-        with open(new_file_name, 'wb') as file:
-            for chunk in file_response.iter_content(chunk_size=8192):
-                file.write(chunk)
+        # Download each file
+        for file_info in files:
+            file_name = file_info['fileName']
+            file_url = file_info['publicUrl']
 
-        print(f"File downloaded and saved as '{new_file_name}'.")
+            # Download the file content
+            file_response = requests.get(file_url)
+            file_response.raise_for_status()  # Check for errors
 
-except requests.exceptions.RequestException as e:
-    print(f"Error: {e}")
+            # Save the file into the test directory
+            file_path = os.path.join(download_dir, file_name)
+            with open(file_path, 'wb') as file:
+                file.write(file_response.content)
+
+            print(f"Downloaded: {file_name}")
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching files: {e}")
+
+if __name__ == "__main__":
+    download_files()
