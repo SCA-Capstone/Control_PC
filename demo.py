@@ -141,14 +141,12 @@ if __name__ == "__main__":
     # Get jobs
     client.get_submitted_jobs()
 
-    # need to add loop through submitted jobs work below
+    # Get files from a folder
+    folder = client.get_folder(folder_id='743')
+    client.update_task_status('743')
+    #print(folder)
 
-    # # Get files from a folder
-    # folder = client.get_folder(folder_id='743')
-    # client.update_task_status('743')
-    # #print(folder)
+    time.sleep(30)
 
-    # time.sleep(30)
-
-    # client.insert_file(folder_name=folder, file_path='example_results.json')
-    # client.update_task_status('743')
+    client.insert_file(folder_name=folder, file_path='example_results.json')
+    client.update_task_status('743')
