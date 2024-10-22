@@ -2,7 +2,7 @@ import os
 import requests
 
 # API endpoint for fetching files based on folder ID (last three digits)
-api_endpoint = 'http://localhost:3000/api/getFile/743'  # Change this to your actual endpoint
+api_endpoint = 'http://localhost:3000/api/getFolder/743'  # Change this to your actual endpoint
 
 # Directory to save downloaded files
 download_dir = 'test'

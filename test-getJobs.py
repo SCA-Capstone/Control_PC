@@ -1,7 +1,7 @@
 import requests
 
 # Define the URL of the Next.js API route
-url = "http://localhost:3000/api/getRecords"  # Update this URL based on your local or production environment
+url = "http://localhost:3000/api/getJobs"  # Update this URL based on your local or production environment
 
 # Send the GET request to the API route
 try:
