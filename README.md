@@ -72,22 +72,44 @@ if __name__ == "__main__":
     client = NextAPIClient()
 
     while True:
-        data = client.get_python_jobs()
-        ids = [job['id'] for job in data] if data else []
 
+        # Limit infinite loop hitting api too quick
+        time.sleep(1)
+
+        # Get jobs
+        data = client.get_python_jobs()
+        print(data)
+
+        if data == None:
+            time.sleep(60)
+            continue
+
+        # Extract 'id' values
+        ids = [job['id'] for job in data]
+        print(ids)
+
+        # Iterate over each id in ids and perform actions
         for job_id in ids:
             print(f"Processing job with ID: {job_id}")
+
+            # Get files from a folder
             folder = client.get_folder(folder_id=job_id)
+            #print(folder)
+
+            # Job should be 'in progress' now
             client.update_task_status(job_id)
 
-            # Add configuration-specific tasks
-            ##################################
+            # Add Config Specific Tasks Here
+            ################################
 
-            # Upload results
+            
+            # Push Results
             client.insert_file(folder_name=folder, file_path='example_results.json')
-            client.update_task_status(job_id)
 
-        # Pause between API calls
+            # Job should be 'complete' now
+            client.update_task_status(job_id)
+        
+        # Limit infinite loop hitting api too quick
         time.sleep(20)
 ```
 

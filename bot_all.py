@@ -152,8 +152,6 @@ class NextAPIClient:
         except requests.exceptions.RequestException as e:
             print(f"Request failed: {e}")
 
-
-# Example usage:
 if __name__ == "__main__":
     client = NextAPIClient()
 
