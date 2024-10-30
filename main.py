@@ -2,15 +2,25 @@ import requests
 import json
 import os
 import time
+from dotenv import load_dotenv
 
+# Load environment variables from .env file
+load_dotenv()
 
 class NextAPIClient:
-    def __init__(self, base_url):
-        self.base_url = base_url
+    def __init__(self):
+        self.base_url = os.getenv('BASE_URL')
+        self.api_key = os.getenv('API_AUTH_TOKEN')
+
+    def _get_headers(self):
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.api_key}'
+        }
 
     def insert_record(self, payload):
         url = f'{self.base_url}/insertRecord'
-        headers = {'Content-Type': 'application/json'}
+        headers = self._get_headers()
         try:
             response = requests.post(
                 url, data=json.dumps(payload), headers=headers)
@@ -24,8 +34,9 @@ class NextAPIClient:
 
     def get_jobs(self):
         url = f'{self.base_url}/getJobs'
+        headers = self._get_headers()
         try:
-            response = requests.get(url)
+            response = requests.get(url, headers=headers)
             if response.status_code == 200:
                 print('Records retrieved successfully:', response.json())
             else:
@@ -36,8 +47,9 @@ class NextAPIClient:
 
     def get_submitted_jobs(self):
         url = f'{self.base_url}/getJobs'
+        headers = self._get_headers()
         try:
-            response = requests.get(url)
+            response = requests.get(url, headers=headers)
             if response.status_code == 200:
                 data = response.json()
                 # Filter jobs where status is 'submitted'
@@ -55,6 +67,7 @@ class NextAPIClient:
 
     def insert_file(self, folder_name, file_path):
         upload_url = f'{self.base_url}/insertFile/{folder_name}'
+        headers = {'Authorization': f'Bearer {self.api_key}'}
 
         if not os.path.exists(file_path):
             print(f"File not found: {file_path}")
@@ -63,7 +76,7 @@ class NextAPIClient:
         try:
             with open(file_path, 'rb') as file:
                 files = {'file': (os.path.basename(file_path), file)}
-                response = requests.post(upload_url, files=files)
+                response = requests.post(upload_url, files=files, headers=headers)
 
                 if response.status_code == 201:
                     print(
@@ -77,11 +90,12 @@ class NextAPIClient:
     def get_folder(self, folder_id, download_dir='test'):
         # API endpoint to fetch folders and their files
         url = f'{self.base_url}/getFolder/{folder_id}'
+        headers = self._get_headers()
 
         os.makedirs(download_dir, exist_ok=True)
 
         try:
-            response = requests.get(url)
+            response = requests.get(url, headers=headers)
             response.raise_for_status()  # Raise an error for bad status codes
 
             data = response.json()
@@ -117,10 +131,11 @@ class NextAPIClient:
     def update_task_status(self, id):
         # API endpoint for updating the task status
         url = f'{self.base_url}/updateStatus/{id}'
+        headers = self._get_headers()
 
         try:
             # Send POST request to the Next.js API with the task ID
-            response = requests.post(url)
+            response = requests.post(url, headers=headers)
 
             # Check if the request was successful
             if response.status_code == 200:
@@ -136,19 +151,18 @@ class NextAPIClient:
 
 # Example usage:
 if __name__ == "__main__":
-    client = NextAPIClient(base_url='http://localhost:3000/api')
+    client = NextAPIClient()
 
     # Get jobs
     client.get_submitted_jobs()
 
     # need to add loop through submitted jobs work below
+     # Get files from a folder
+    folder = client.get_folder(folder_id='743')
+    client.update_task_status('743')
+    print(folder)
 
-    # # Get files from a folder
-    # folder = client.get_folder(folder_id='743')
-    # client.update_task_status('743')
-    # #print(folder)
+    #time.sleep(20)
 
-    # time.sleep(30)
-
-    # client.insert_file(folder_name=folder, file_path='example_results.json')
-    # client.update_task_status('743')
+    client.insert_file(folder_name=folder, file_path='example_results.json')
+    client.update_task_status('743')

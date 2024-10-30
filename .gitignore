@@ -1,3 +1,7 @@
 #could be large files eventually
 downloaded-file
 test
+
+#Secure Keys
+.env
+genKey.py
