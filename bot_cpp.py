@@ -57,13 +57,43 @@ class NextAPIClient:
                     'status') == 'submitted']
                 if submitted_jobs:
                     print('Submitted jobs retrieved successfully:', submitted_jobs)
+                    return submitted_jobs
                 else:
                     print('No submitted jobs found.')
+                    return None
             else:
                 print(
                     f'Error retrieving records: {response.status_code}', response.text)
+                return None
         except requests.exceptions.RequestException as e:
             print(f'Request failed: {e}')
+            return None
+
+    def get_cpp_jobs(self):
+        url = f'{self.base_url}/getJobs'
+        headers = self._get_headers()
+        try:
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                # Filter jobs where status is 'submitted' and config is 'C++'
+                submitted_jobs = [
+                    job for job in data
+                    if job.get('status') == 'submitted' and job.get('config') == 'C++'
+                ]
+                if submitted_jobs:
+                    print('Submitted jobs with config "C++" retrieved successfully:', submitted_jobs)
+                    return submitted_jobs
+                else:
+                    print('No submitted jobs with config "C++" found.')
+                    return None
+            else:
+                print(f'Error retrieving records: {response.status_code}', response.text)
+                return None
+        except requests.exceptions.RequestException as e:
+            print(f'Request failed: {e}')
+            return None
+
 
     def insert_file(self, folder_name, file_path):
         upload_url = f'{self.base_url}/insertFile/{folder_name}'
@@ -153,16 +183,46 @@ class NextAPIClient:
 if __name__ == "__main__":
     client = NextAPIClient()
 
-    # Get jobs
-    client.get_submitted_jobs()
+    while True:
 
-    # need to add loop through submitted jobs work below
-     # Get files from a folder
-    folder = client.get_folder(folder_id='743')
-    client.update_task_status('743')
-    print(folder)
+        # Limit infinite loop hitting api too quick
+        time.sleep(1)
 
-    #time.sleep(20)
+        # Get jobs
+        data = client.get_cpp_jobs()
+        print(data)
 
-    client.insert_file(folder_name=folder, file_path='example_results.json')
-    client.update_task_status('743')
+        if data == None:
+            time.sleep(60)
+            continue
+
+        # Extract 'id' values
+        ids = [job['id'] for job in data]
+        print(ids)
+
+        # Iterate over each id in ids and perform actions
+        for job_id in ids:
+            print(f"Processing job with ID: {job_id}")
+
+            # Get files from a folder
+            folder = client.get_folder(folder_id=job_id)
+            #print(folder)
+
+            # Job should be 'in progress' now
+            client.update_task_status(job_id)
+
+            # Add Config Specific Tasks Here
+            ################################
+
+            
+            # Push Results
+            client.insert_file(folder_name=folder, file_path='example_results.json')
+
+            # Job should be 'complete' now
+            client.update_task_status(job_id)
+        
+        # Limit infinite loop hitting api too quick
+        time.sleep(20)
+        
+
+    
