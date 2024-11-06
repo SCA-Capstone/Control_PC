@@ -1,6 +1,8 @@
-#could be large files eventually
-downloaded-file
-test
+#created bot directories
+all_files
+cpp_files
+java_files
+python_files
 
 #Secure Keys
 .env

@@ -117,7 +117,7 @@ class NextAPIClient:
         except requests.exceptions.RequestException as e:
             print(f"Error uploading file: {e}")
 
-    def get_folder(self, folder_id, download_dir='test'):
+    def get_folder(self, folder_id, download_dir='cpp_files'):
         # API endpoint to fetch folders and their files
         url = f'{self.base_url}/getFolder/{folder_id}'
         headers = self._get_headers()
