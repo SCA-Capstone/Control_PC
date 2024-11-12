@@ -2,10 +2,12 @@ import requests
 import json
 import os
 import time
+import subprocess
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
+
 
 class NextAPIClient:
     def __init__(self):
@@ -82,18 +84,19 @@ class NextAPIClient:
                     if job.get('status') == 'submitted' and job.get('config') == 'Python'
                 ]
                 if submitted_jobs:
-                    print('Submitted jobs with config "python" retrieved successfully:', submitted_jobs)
+                    print(
+                        'Submitted jobs with config "python" retrieved successfully:', submitted_jobs)
                     return submitted_jobs
                 else:
                     print('No submitted jobs with config "python" found.')
                     return None
             else:
-                print(f'Error retrieving records: {response.status_code}', response.text)
+                print(
+                    f'Error retrieving records: {response.status_code}', response.text)
                 return None
         except requests.exceptions.RequestException as e:
             print(f'Request failed: {e}')
             return None
-
 
     def insert_file(self, folder_name, file_path):
         upload_url = f'{self.base_url}/insertFile/{folder_name}'
@@ -106,7 +109,8 @@ class NextAPIClient:
         try:
             with open(file_path, 'rb') as file:
                 files = {'file': (os.path.basename(file_path), file)}
-                response = requests.post(upload_url, files=files, headers=headers)
+                response = requests.post(
+                    upload_url, files=files, headers=headers)
 
                 if response.status_code == 201:
                     print(
@@ -130,7 +134,8 @@ class NextAPIClient:
 
             data = response.json()
             files = data.get('files', [])
-            folder_name = data.get('folderName', '')  # Assuming API returns folder name
+            # Assuming API returns folder name
+            folder_name = data.get('folderName', '')
 
             if not files:
                 print(f"No files found for folder ID {folder_id}.")
@@ -153,10 +158,9 @@ class NextAPIClient:
                 print(f"Downloaded: {file_name}")
 
             return folder_name  # Return the full folder name
-        
+
         except requests.exceptions.RequestException as e:
             print(f"Error fetching files: {e}")
-
 
     def update_task_status(self, id):
         # API endpoint for updating the task status
@@ -178,8 +182,13 @@ class NextAPIClient:
         except requests.exceptions.RequestException as e:
             print(f"Request failed: {e}")
 
+
 if __name__ == "__main__":
     client = NextAPIClient()
+
+    # Create output directory if it doesn't exist
+    output_dir = 'python_output'
+    os.makedirs(output_dir, exist_ok=True)
 
     while True:
 
@@ -204,21 +213,36 @@ if __name__ == "__main__":
 
             # Get files from a folder
             folder = client.get_folder(folder_id=job_id)
-            #print(folder)
+            # print(folder)
 
             # Job should be 'in progress' now
             client.update_task_status(job_id)
 
             # Add Config Specific Tasks Here
             ################################
+            # Run a shell command and capture both stdout and stderr
+            stdout_path = os.path.join(output_dir, f"stdout.txt")
+            stderr_path = os.path.join(output_dir, f"stderr.txt")
 
-            
-            # Push Results
-            client.insert_file(folder_name=folder, file_path='example_results.json')
+            with open(stdout_path, 'w') as stdout_file, open(stderr_path, 'w') as stderr_file:
+                result = subprocess.run(
+                #change here for different commands
+                ["python", "python_files/test.py"],
+                stdout=stdout_file,
+                stderr=stderr_file,
+                text=True
+            )
 
+            # Loop through the output directory and insert each file into the folder
+            for output_file in os.listdir(output_dir):
+                file_path = os.path.join(output_dir, output_file)
+                if os.path.isfile(file_path):
+                    # Insert each file in the output directory
+                    client.insert_file(folder_name=folder, file_path=file_path)
+           
             # Job should be 'complete' now
             client.update_task_status(job_id)
-        
+            
+
         # Limit infinite loop hitting api too quick
         time.sleep(20)
-

@@ -1,8 +1,10 @@
 #created bot directories
-all_files
 cpp_files
+cpp_output
 java_files
+java_output
 python_files
+python_output
 
 #Secure Keys
 .env
