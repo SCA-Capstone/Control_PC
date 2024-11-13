@@ -10,12 +10,11 @@
    - [Configuration](#configuration)
    - [API Methods](#api-methods)
    - [Example Workflow](#example-workflow)
-4. [Customization](#customization)
 
 ## Prerequisites
 
 - Python 3.6 or higher
-- Required libraries: `requests`, `json`, `os`, `time`, `dotenv`
+- Required libraries: `requests`, `json`, `os`, `time`, `dotenv`, `subprocess`
 - Next.js API endpoint and API key, stored in a `.env` file
 
 ## Installation
@@ -35,8 +34,8 @@
 
    Create a `.env` file in the project directory with the following content:
    ```bash
-   BASE_URL=<Your Next.js API URL>
-   API_AUTH_TOKEN=<Your API Key>
+   BASE_URL=<Next.js API URL>
+   API_AUTH_TOKEN=<API Key>
    ```
 
 ## Usage
@@ -44,6 +43,8 @@
 ### Configuration
 
 The main configurations the script handles include `python`, `cpp`, and `java` jobs. These configurations dictate specific handling and file processing methods within the workflow.
+
+Each `bot` will grab its specific job files and throw it in assossiated `config_files` directory to be accessed anf compiled. Standard out and Standard error will be recorded and thrown in `config_output` to be uploaded. For example, the python bot will download necessary files into `python_files` and put the output from the test into `python_output`. Additional work will be needed to manage directory space because as of now all files are being overwritten instead of deleted after use.
 
 ### API Methods
 
@@ -71,6 +72,10 @@ Example usage code is in the main loop:
 if __name__ == "__main__":
     client = NextAPIClient()
 
+    # Create output directory if it doesn't exist
+    output_dir = 'python_output'
+    os.makedirs(output_dir, exist_ok=True)
+
     while True:
 
         # Limit infinite loop hitting api too quick
@@ -94,25 +99,38 @@ if __name__ == "__main__":
 
             # Get files from a folder
             folder = client.get_folder(folder_id=job_id)
-            #print(folder)
+            # print(folder)
 
             # Job should be 'in progress' now
             client.update_task_status(job_id)
 
             # Add Config Specific Tasks Here
             ################################
+            # Run a shell command and capture both stdout and stderr
+            stdout_path = os.path.join(output_dir, f"stdout.txt")
+            stderr_path = os.path.join(output_dir, f"stderr.txt")
 
-            
-            # Push Results
-            client.insert_file(folder_name=folder, file_path='example_results.json')
+            with open(stdout_path, 'w') as stdout_file, open(stderr_path, 'w') as stderr_file:
+                result = subprocess.run(
+                #change here for different commands
+                ["python", "python_files/test.py"],
+                stdout=stdout_file,
+                stderr=stderr_file,
+                text=True
+            )
 
+            # Loop through the output directory and insert each file into the folder
+            for output_file in os.listdir(output_dir):
+                file_path = os.path.join(output_dir, output_file)
+                if os.path.isfile(file_path):
+                    # Insert each file in the output directory
+                    client.insert_file(folder_name=folder, file_path=file_path)
+           
             # Job should be 'complete' now
             client.update_task_status(job_id)
-        
+            
+
         # Limit infinite loop hitting api too quick
         time.sleep(20)
 ```
 
-### Customization
-
-Add configuration-specific tasks for `cpp` and `java` jobs within the loop by modifying the `# Add configuration-specific tasks` section.
