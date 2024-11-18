@@ -223,8 +223,8 @@ if __name__ == "__main__":
             ################################
             # Run a shell command and capture both stdout and stderr
             # Run a shell command and capture both stdout and stderr
-            stdout_path = os.path.join(output_dir, f"{job_id}_stdout.txt")
-            stderr_path = os.path.join(output_dir, f"{job_id}_stderr.txt")
+            stdout_path = os.path.join(output_dir, f"stdout.txt")
+            stderr_path = os.path.join(output_dir, f"stderr.txt")
 
             # Step 1: Compile the C++ program
             compile_result = subprocess.run(
